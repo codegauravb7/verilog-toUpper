@@ -34,7 +34,7 @@ The design was written in Verilog using only **primitive digital gates**. No `as
 * `wave_correct.png` → correct 40 ns operation
 * `wave_min_pass.png` → minimum passing 10 ns interval
 * `wave_max_fail.png` → failing 8 ns interval
-* `kmap_handdrawn.png` → hand-drawn 16×16 K-map showing active ASCII region
+* `kmap_y5.png` → handwritten 16×16 K-map showing output bit y₅ mapping
 * `Project1_Report_GauravBanepali.pdf` → complete report with analysis and results
 
 Simulations were compiled and executed using **Icarus Verilog (`iverilog`, `vvp`)** and visualized in **GTKWave**.
@@ -43,22 +43,17 @@ Simulations were compiled and executed using **Icarus Verilog (`iverilog`, `vvp`
 
 ## 🧩 K-Map Analysis
 
-To detect when input ASCII codes fall in the lowercase range (97–122 → `01100001₂`–`01111010₂`), a full **8-bit (16×16) K-Map** was created using Gray-code ordering.
-The map highlights logic 1 for all lowercase letters `'a'–'z'` and 0 elsewhere.
-This detection signal is expressed as:
+The K-map represents the **output bit `y₅(x₇..x₀)`** directly, which determines whether bit 5 should remain high or be cleared for each ASCII input.
+Cells are filled according to this rule:
 
-[
-L(x_7..x_0)=1 \text{ for 97 ≤ ASCII ≤ 122}
-]
+* **0** when `x₅ = 0`
+* **1** when `x₅ = 1`, **except** for ASCII 97–122 (`'a'–'z'`), where the cell is **0**
 
-which drives the **bit-5 clearing logic**:
+This configuration ensures that bit 5 is cleared automatically for lowercase letters, performing the uppercase conversion within the hardware itself.
+The derived sum-of-products (SOP) expression for `y₅` defines the gate-level implementation used in the circuit.
 
-[
-y_5 = x_5 \cdot \lnot L
-]
-
-**K-Map illustration:**
-![K-map](kmap_handdrawn.png)
+**Handwritten K-Map Illustration:**
+![K-map for y5](kmap_y5.png)
 
 ---
 
@@ -84,15 +79,15 @@ y_5 = x_5 \cdot \lnot L
 
 * The circuit behaves correctly as long as gate outputs have enough time to settle.
 * At ≤ 10 ns, propagation delays overlap, producing glitches in some output bits.
-* This confirms that **hardware speed is limited by gate-level timing.**
+* This confirms that **hardware speed is limited by gate-level timing**.
 
 ---
 
 ## 🧾 Conclusion
 
 The `toUpper()` Verilog implementation successfully demonstrates how primitive gates can replicate a text-processing function at the hardware level.
-Through simulation and stress testing, it was verified that the design remains stable at 10 ns or greater input spacing and fails below this threshold.
-This highlights the relationship between **timing analysis** and **reliable digital design.**
+Through simulation and timing analysis, it was verified that the design remains stable at 10 ns or greater input spacing and fails below this threshold.
+The implemented K-map for `y₅` achieves the correct uppercase conversion by clearing bit 5 for lowercase letters and leaving all other characters unchanged.
 
 ---
 
@@ -107,7 +102,7 @@ verilog-toUpper/
 ├── wave_correct.png
 ├── wave_min_pass.png
 ├── wave_max_fail.png
-├── kmap_handdrawn.png
+├── kmap_y5.png
 ├── Project1_Report_GauravBanepali.pdf
 └── README.md
 ```
