@@ -1,108 +1,120 @@
 # Project 1 — Gate-Level Implementation of `toUpper()`
 
-**Author:** Gaurav Banepali
-**Course:** CSC 211000 – Digital Design
-**Date:** November 2025
+Author: Gaurav Banepali  
+Course: CSC 211000 – Digital Design  
+Date: November 2025
 
 ---
 
-## 🧠 Overview
+## Overview
 
-This project demonstrates how the `toUpper()` function — normally implemented in software — can be recreated entirely in **hardware** using primitive logic gates in Verilog.
-The circuit converts lowercase ASCII letters (`a–z`) to uppercase (`A–Z`) while leaving all other characters unchanged.
-It also explores how **propagation delays** and **timing constraints** affect circuit stability and performance.
+This project implements the ASCII `toUpper()` operation entirely at the gate level using primitive Verilog logic gates.  
+The circuit converts lowercase ASCII letters (`a–z`) to uppercase (`A–Z`) by clearing bit 5 of the input whenever the character falls within the lowercase range.  
+All non-lowercase values pass through unchanged.
 
----
-
-## ⚙️ Implementation
-
-The design was written in Verilog using only **primitive digital gates**. No `assign` statements or behavioral modeling were used.
-
-| Gate Type | Delay (#) | Description                          |
-| --------- | --------- | ------------------------------------ |
-| NOT       | #5        | Inverts a single bit                 |
-| AND, OR   | #10       | Basic combinational logic            |
-| NAND, NOR | #12       | Inverted logic combinations          |
-| XOR, XNOR | #15       | Used for comparison and parity       |
-| BUF       | #4        | Buffers or stabilizes output signals |
-
-**Files included in the repository:**
-
-* `toUpper_gates.v` → main Verilog module (gate-level circuit)
-* `tb_toUpper_gates.v` → testbench providing ASCII inputs and timing intervals
-* `toUpper_gates.vcd` → waveform dump for GTKWave visualization
-* `wave_correct.png` → correct 40 ns operation
-* `wave_min_pass.png` → minimum passing 10 ns interval
-* `wave_max_fail.png` → failing 8 ns interval
-* `kmap_y5.png` → handwritten 16×16 K-map showing output bit y₅ mapping
-* `Project1_Report_GauravBanepali.pdf` → complete report with analysis and results
-
-Simulations were compiled and executed using **Icarus Verilog (`iverilog`, `vvp`)** and visualized in **GTKWave**.
+The project also includes timing analysis to determine the minimum safe input interval based on the circuit’s propagation delays.
 
 ---
 
-## 🧩 K-Map Analysis
+## Implementation
 
-The K-map represents the **output bit `y₅(x₇..x₀)`** directly, which determines whether bit 5 should remain high or be cleared for each ASCII input.
-Cells are filled according to this rule:
+The module uses only primitive gates with fixed delays:
 
-* **0** when `x₅ = 0`
-* **1** when `x₅ = 1`, **except** for ASCII 97–122 (`'a'–'z'`), where the cell is **0**
+| Gate Type | Delay | Description |
+|----------|--------|-------------|
+| NOT      | #5     | Bit inversion |
+| AND, OR  | #10    | Basic combinational logic |
+| NAND/NOR | #12    | Inverted logic forms |
+| XOR/XNOR | #15    | Comparison logic |
+| BUF      | #4     | Output buffering |
 
-This configuration ensures that bit 5 is cleared automatically for lowercase letters, performing the uppercase conversion within the hardware itself.
-The derived sum-of-products (SOP) expression for `y₅` defines the gate-level implementation used in the circuit.
+The core of the design is a minimized sum-of-products expression for output bit `y[5]`, derived from the 16×16 K-map.  
+This minimizes the number of AND/OR operations and ensures delay meets the NOT → AND → OR requirement.
 
-**Handwritten K-Map Illustration:**
-![K-map for y5](kmap_y5.png)
+**Files included:**
+- `toUpper_gates.v` — gate-level module  
+- `tb_toUpper_gates.v` — testbench  
+- `toUpper_gates.vcd` — waveform dump for GTKWave  
+- `wave_40ns.png` — waveform at 40 ns interval (correct behavior)  
+- `wave_10ns.png` — minimum passing interval  
+- `wave_8ns.png` — failing interval  
+- `kmap_y5.png` — handwritten 16×16 K-map  
+- `Project1_Report_GauravBanepali.pdf` — full written report  
 
----
-
-## 📊 Simulation Results
-
-| Input Interval (ns) | Behavior                   | Notes                       |
-| ------------------- | -------------------------- | --------------------------- |
-| 40                  | ✅ Correct                  | Normal operation            |
-| 20                  | ✅ Correct                  | Stable output               |
-| 12                  | ✅ Correct                  | Stable output               |
-| **10**              | ✅ Minimum Passing Interval | Smallest safe delay         |
-| **8**               | ❌ Failing Interval         | Unstable / incorrect output |
-
-**Waveform Screenshots:**
-
-* **Figure 1:** Normal operation at 40 ns
-* **Figure 2:** Minimum valid interval (10 ns)
-* **Figure 3:** Failing interval (8 ns)
+Simulations were performed using Icarus Verilog (`iverilog`, `vvp`) and GTKWave.
 
 ---
 
-## 🧠 Observations
+## K-Map Analysis (Output Bit y₅)
 
-* The circuit behaves correctly as long as gate outputs have enough time to settle.
-* At ≤ 10 ns, propagation delays overlap, producing glitches in some output bits.
-* This confirms that **hardware speed is limited by gate-level timing**.
+A complete 16×16 K-map was constructed using all 8 input bits in Gray-code order.  
+Each cell contains the value of output bit `y₅` for the corresponding ASCII input.
+
+Rules for filling the map:
+
+- If bit 5 (`x₅`) is **0** → output is **0**.  
+- If bit 5 is **1** → output is normally **1**.  
+- If the value is lowercase ASCII (97–122) → output must be **0**, so these cells were forced to 0.
+
+This method avoids needing a separate lowercase-detection circuit and directly produces the minimized SOP form.
+
+**Handwritten K-map:**  
+`kmap_y5.png`
 
 ---
 
-## 🧾 Conclusion
+## Simulation Results
 
-The `toUpper()` Verilog implementation successfully demonstrates how primitive gates can replicate a text-processing function at the hardware level.
-Through simulation and timing analysis, it was verified that the design remains stable at 10 ns or greater input spacing and fails below this threshold.
-The implemented K-map for `y₅` achieves the correct uppercase conversion by clearing bit 5 for lowercase letters and leaving all other characters unchanged.
+The design was tested across multiple input intervals to check timing stability:
+
+| Interval (ns) | Behavior |
+|---------------|----------|
+| 40            | Correct behavior |
+| 20            | Correct behavior |
+| 12            | Correct behavior |
+| 10            | Minimum passing interval |
+| 8             | Failing interval (unstable output) |
+
+**Waveform Images:**
+
+### 40 ns (Correct)
+![40ns waveform](wave_40ns.png)
+
+### 10 ns (Minimum Passing)
+![10ns waveform](wave_10ns.png)
+
+### 8 ns (Failing)
+![8ns waveform](wave_8ns.png)
 
 ---
 
-## 📁 Repository Contents
+## Observations
 
-```
+- The minimized K-map expression resulted in fewer gates and cleaner timing.  
+- The worst-case propagation delay matches the expected chain of NOT → AND → OR.  
+- The circuit operates correctly for all ASCII values when the interval is **≥ 10 ns**.  
+- At **8 ns**, the output becomes unstable due to overlapping gate delays.
+
+---
+
+## Conclusion
+
+This project demonstrates a hardware-based implementation of ASCII uppercase conversion using only primitive gates.  
+The K-map approach ensures full correctness for every input value, and the timing tests confirm the circuit’s maximum safe operating speed.  
+The result is a clean, optimized gate-level design suitable for digital hardware environments.
+
+---
+
+## Repository Contents
+
 verilog-toUpper/
 │
 ├── toUpper_gates.v
 ├── tb_toUpper_gates.v
 ├── toUpper_gates.vcd
-├── wave_correct.png
-├── wave_min_pass.png
-├── wave_max_fail.png
+├── wave_40ns.png
+├── wave_10ns.png
+├── wave_8ns.png
 ├── kmap_y5.png
 ├── Project1_Report_GauravBanepali.pdf
 └── README.md
-```
